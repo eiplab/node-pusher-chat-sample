@@ -1,0 +1,56 @@
+!!! 5
+html(lang='ja')
+  head
+    meta(charset="UTF-8")
+    script(src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js")
+    script(src="http://js.pusherapp.com/1.8/pusher.min.js")
+    script
+      $(function() {
+        var pusher = new Pusher('9d0930f0c73413bee29a');
+        var channel = pusher.subscribe('chat');
+        
+        // メッセージ受信処理
+        channel.bind('message', function(data) {
+          $("<div>")
+            .text(unescapeUnicode(data.name + " - " + data.body))
+            .appendTo("#chat-log");
+        });
+        
+        // メッセージ送信処理
+        $("#form").submit(function() {
+          var name = escapeUnicode($("#post-name").val());
+          var body = escapeUnicode($("#post-body").val());
+          if (!name || !body) {
+            return false;
+          }
+
+          $("#post-name").val('');
+          $("#post-body").val('');
+
+          var data = { name: name, body: body };
+          $.post("/post", data);
+
+          return false;
+        });
+      });
+      
+      // http://d.hatena.ne.jp/sawat/20070309/1173459459
+      function escapeUnicode(str) {
+        return str.replace(/[^ -~]|\\\\/g, function(m0) {
+          var code = m0.charCodeAt(0);
+          return '\\\\u' + ((code < 0x10)? '000' : 
+                          (code < 0x100)? '00' :
+                          (code < 0x1000)? '0' : '') + code.toString(16);
+        });
+      }
+      function unescapeUnicode(str) {
+        return str.replace(/\\\\u([a-fA-F0-9]{4})/g, function(m0, m1) {
+          return String.fromCharCode(parseInt(m1, 16));
+        });
+      }
+  body
+    form#form
+      input#post-name(type="text", placeholder="name")
+      input#post-body(type="text", placeholder="body")
+      input(type="submit", value="Send")
+    #chat-log
